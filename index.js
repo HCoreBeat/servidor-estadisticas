@@ -2,6 +2,14 @@ const express = require("express");
 const fs = require("fs");
 const app = express();
 
+
+const cors = require("cors");
+
+app.use(cors({
+    origin: "https://www.asereshops.com", // Cambia esto por el dominio de tu sitio
+    methods: ["GET", "POST"] // Métodos permitidos
+}));
+
 // Middleware para procesar JSON
 app.use(express.json());
 
