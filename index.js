@@ -4,11 +4,20 @@ const app = express();
 
 
 const cors = require("cors");
+
+const allowedOrigins = ["https://www.asereshops.com", "https://hcorebeat.github.io"];
 app.use(cors({
-    origin: "https://www.asereshops.com", // Permite solo este dominio
-    methods: ["GET", "POST"], // Métodos permitidos
-    allowedHeaders: ["Content-Type"] // Encabezados permitidos
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("No permitido por CORS"));
+        }
+    },
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"]
 }));
+
 
 
 
