@@ -25,7 +25,7 @@ app.use(express.json());
 app.post("/guardar-estadistica", (req, res) => {
     const nuevaEstadistica = req.body;
 
-    // Validar los datos requeridos para guardar
+    // Validar que los campos obligatorios estén presentes
     if (!nuevaEstadistica.ip || !nuevaEstadistica.pais || !nuevaEstadistica.fecha_hora_entrada || !nuevaEstadistica.origen) {
         return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
@@ -38,17 +38,23 @@ app.post("/guardar-estadistica", (req, res) => {
 
         const estadisticas = data ? JSON.parse(data) : [];
 
-        // Agregar la nueva estadística al arreglo existente
+        // Agregar la nueva estadística con todos los datos
         estadisticas.push({
             ip: nuevaEstadistica.ip,
             pais: nuevaEstadistica.pais,
             fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada,
             origen: nuevaEstadistica.origen,
-            afiliado: nuevaEstadistica.afiliado || "Ninguno", // Aseguramos que el afiliado esté incluido
-            duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos || 0
+            afiliado: nuevaEstadistica.afiliado || "Ninguno",
+            duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos || 0,
+            tiempo_carga_pagina_ms: nuevaEstadistica.tiempo_carga_pagina_ms || 0,
+            nombre_comprador: nuevaEstadistica.nombre_comprador || "N/A",
+            telefono_comprador: nuevaEstadistica.telefono_comprador || "N/A",
+            correo_comprador: nuevaEstadistica.correo_comprador || "N/A",
+            compras: nuevaEstadistica.compras || [],
+            precio_compra_total: nuevaEstadistica.precio_compra_total || 0
         });
 
-        // Escribir las estadísticas actualizadas en el archivo
+        // Guardar las estadísticas actualizadas
         fs.writeFile("estadistica.json", JSON.stringify(estadisticas, null, 2), (err) => {
             if (err) {
                 return res.status(500).send("Error guardando el archivo");
@@ -57,6 +63,7 @@ app.post("/guardar-estadistica", (req, res) => {
         });
     });
 });
+
 
 // Ruta para obtener todas las estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
