@@ -5,10 +5,11 @@ const app = express();
 
 const cors = require("cors");
 app.use(cors({
-    origin: "https://www.asereshops.com", // Permite solicitudes solo desde tu dominio
+    origin: "https://www.asereshops.com", // Permite solo este dominio
     methods: ["GET", "POST"], // Métodos permitidos
     allowedHeaders: ["Content-Type"] // Encabezados permitidos
 }));
+
 
 
 // Middleware para procesar JSON
