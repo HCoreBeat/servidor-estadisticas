@@ -4,7 +4,7 @@ const cors = require("cors");
 
 const app = express();
 
-// Configuración de CORS
+// Configuración de CORS para permitir dominios específicos
 const allowedOrigins = ["https://www.asereshops.com", "https://hcorebeat.github.io"];
 app.use(cors({
     origin: function (origin, callback) {
@@ -21,21 +21,16 @@ app.use(cors({
 // Middleware para procesar JSON
 app.use(express.json());
 
-// Validar los datos antes de guardar
-function validarDatosEstadistica(estadistica) {
-    const camposRequeridos = ["ip", "pais", "fecha_hora_entrada", "origen"];
-    return camposRequeridos.every(campo => estadistica.hasOwnProperty(campo));
-}
-
+// Ruta para guardar o actualizar estadísticas
 app.post("/guardar-estadistica", (req, res) => {
     const nuevaEstadistica = req.body;
 
     // Validar los datos requeridos para guardar
-    if (!nuevaEstadistica.ip || typeof nuevaEstadistica.duracion_sesion_segundos === "undefined") {
-        return res.status(400).json({ error: "Faltan campos obligatorios: 'ip' o 'duracion_sesion_segundos'" });
+    if (!nuevaEstadistica.ip || !nuevaEstadistica.pais || !nuevaEstadistica.fecha_hora_entrada || !nuevaEstadistica.origen) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
 
-    // Leer las estadísticas actuales
+    // Leer las estadísticas actuales desde el archivo
     fs.readFile("estadistica.json", "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
@@ -43,27 +38,17 @@ app.post("/guardar-estadistica", (req, res) => {
 
         const estadisticas = data ? JSON.parse(data) : [];
 
-        // Buscar si ya existe un registro para la misma IP
-        const estadisticaExistente = estadisticas.find(est => est.ip === nuevaEstadistica.ip);
+        // Agregar la nueva estadística al arreglo existente
+        estadisticas.push({
+            ip: nuevaEstadistica.ip,
+            pais: nuevaEstadistica.pais,
+            fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada,
+            origen: nuevaEstadistica.origen,
+            afiliado: nuevaEstadistica.afiliado || "Ninguno", // Aseguramos que el afiliado esté incluido
+            duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos || 0
+        });
 
-        if (estadisticaExistente) {
-            // Si ya existe, actualiza la duración de la sesión
-            estadisticaExistente.duracion_sesion_segundos += nuevaEstadistica.duracion_sesion_segundos;
-            // Actualiza el afiliado si está presente
-            estadisticaExistente.afiliado = nuevaEstadistica.afiliado || estadisticaExistente.afiliado;
-        } else {
-            // Si no existe, crea un nuevo registro
-            estadisticas.push({
-                ip: nuevaEstadistica.ip,
-                pais: nuevaEstadistica.pais || "Desconocido",
-                fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada || new Date().toISOString(),
-                origen: nuevaEstadistica.origen || "Desconocido",
-                afiliado: nuevaEstadistica.afiliado || "Ninguno",
-                duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos
-            });
-        }
-
-        // Escribe las estadísticas actualizadas
+        // Escribir las estadísticas actualizadas en el archivo
         fs.writeFile("estadistica.json", JSON.stringify(estadisticas, null, 2), (err) => {
             if (err) {
                 return res.status(500).send("Error guardando el archivo");
@@ -85,7 +70,7 @@ app.get("/obtener-estadisticas", (req, res) => {
     });
 });
 
-// Ruta para limpiar todas las estadísticas (opcional)
+// Ruta para limpiar estadísticas (opcional)
 app.delete("/limpiar-estadisticas", (req, res) => {
     fs.writeFile("estadistica.json", JSON.stringify([], null, 2), (err) => {
         if (err) {
