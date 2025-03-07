@@ -1,10 +1,10 @@
 const express = require("express");
 const fs = require("fs");
-const app = express();
-
-
 const cors = require("cors");
 
+const app = express();
+
+// Configuración de CORS
 const allowedOrigins = ["https://www.asereshops.com", "https://hcorebeat.github.io"];
 app.use(cors({
     origin: function (origin, callback) {
@@ -18,67 +18,58 @@ app.use(cors({
     allowedHeaders: ["Content-Type"]
 }));
 
-
-
-
 // Middleware para procesar JSON
 app.use(express.json());
+
+// Validar los datos antes de guardar
+function validarDatosEstadistica(estadistica) {
+    const camposRequeridos = ["ip", "pais", "fecha_hora_entrada", "origen"];
+    return camposRequeridos.every(campo => estadistica.hasOwnProperty(campo));
+}
 
 // Ruta para guardar o actualizar estadísticas
 app.post("/guardar-estadistica", (req, res) => {
     const nuevaEstadistica = req.body;
 
-    // Lee las estadísticas actuales
+    // Validar los datos recibidos
+    if (!validarDatosEstadistica(nuevaEstadistica)) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
+    }
+
+    // Leer las estadísticas actuales desde el archivo
     fs.readFile("estadistica.json", "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
         }
 
-        // Convertir el archivo JSON a un array o iniciar como vacío
         const estadisticas = data ? JSON.parse(data) : [];
 
-        // Verifica si ya existe un registro para la IP del usuario
-        const estadisticaExistente = estadisticas.find(est => est.ip === nuevaEstadistica.ip);
+        // Agregar la nueva estadística sin sobrescribir datos previos
+        estadisticas.push(nuevaEstadistica);
 
-        if (estadisticaExistente) {
-            // Actualiza la duración de la sesión o campos adicionales si ya existe
-            estadisticaExistente.duracion_sesion_segundos += nuevaEstadistica.duracion_sesion_segundos || 0;
-
-            // Si hay nuevos datos adicionales (como compras), los agregamos
-            if (nuevaEstadistica.compras) {
-                estadisticaExistente.compras = estadisticaExistente.compras || [];
-                estadisticaExistente.compras.push(...nuevaEstadistica.compras);
-                estadisticaExistente.precio_compra_total = (estadisticaExistente.precio_compra_total || 0) + nuevaEstadistica.precio_compra_total;
-            }
-        } else {
-            // Crea un nuevo registro si no existe
-            estadisticas.push(nuevaEstadistica);
-        }
-
-        // Escribe las estadísticas actualizadas en el archivo
+        // Guardar las estadísticas actualizadas
         fs.writeFile("estadistica.json", JSON.stringify(estadisticas, null, 2), (err) => {
             if (err) {
                 return res.status(500).send("Error guardando el archivo");
             }
-            res.send("Estadística guardada o actualizada correctamente");
+            res.send("Estadística guardada correctamente");
         });
     });
 });
 
-// Ruta para obtener estadísticas
+// Ruta para obtener todas las estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
     fs.readFile("estadistica.json", "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
         }
 
-        // Convertir el archivo JSON a un array y devolverlo
         const estadisticas = data ? JSON.parse(data) : [];
         res.json(estadisticas);
     });
 });
 
-// Ruta para limpiar estadísticas (opcional, para pruebas)
+// Ruta para limpiar todas las estadísticas (opcional)
 app.delete("/limpiar-estadisticas", (req, res) => {
     fs.writeFile("estadistica.json", JSON.stringify([], null, 2), (err) => {
         if (err) {
