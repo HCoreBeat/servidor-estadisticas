@@ -29,7 +29,7 @@ app.post("/guardar-estadistica", (req, res) => {
     const nuevaEstadistica = req.body;
 
     // Lee las estadísticas actuales
-    fs.readFile("estadisticas.json", "utf8", (err, data) => {
+    fs.readFile("estadistica.json", "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
         }
@@ -56,7 +56,7 @@ app.post("/guardar-estadistica", (req, res) => {
         }
 
         // Escribe las estadísticas actualizadas en el archivo
-        fs.writeFile("estadisticas.json", JSON.stringify(estadisticas, null, 2), (err) => {
+        fs.writeFile("estadistica.json", JSON.stringify(estadisticas, null, 2), (err) => {
             if (err) {
                 return res.status(500).send("Error guardando el archivo");
             }
@@ -67,7 +67,7 @@ app.post("/guardar-estadistica", (req, res) => {
 
 // Ruta para obtener estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
-    fs.readFile("estadisticas.json", "utf8", (err, data) => {
+    fs.readFile("estadistica.json", "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
         }
@@ -80,7 +80,7 @@ app.get("/obtener-estadisticas", (req, res) => {
 
 // Ruta para limpiar estadísticas (opcional, para pruebas)
 app.delete("/limpiar-estadisticas", (req, res) => {
-    fs.writeFile("estadisticas.json", JSON.stringify([], null, 2), (err) => {
+    fs.writeFile("estadistica.json", JSON.stringify([], null, 2), (err) => {
         if (err) {
             return res.status(500).send("Error al limpiar las estadísticas");
         }
