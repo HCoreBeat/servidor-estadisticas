@@ -49,6 +49,8 @@ app.post("/guardar-estadistica", (req, res) => {
         if (estadisticaExistente) {
             // Si ya existe, actualiza la duración de la sesión
             estadisticaExistente.duracion_sesion_segundos += nuevaEstadistica.duracion_sesion_segundos;
+            // Actualiza el afiliado si está presente
+            estadisticaExistente.afiliado = nuevaEstadistica.afiliado || estadisticaExistente.afiliado;
         } else {
             // Si no existe, crea un nuevo registro
             estadisticas.push({
@@ -56,6 +58,7 @@ app.post("/guardar-estadistica", (req, res) => {
                 pais: nuevaEstadistica.pais || "Desconocido",
                 fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada || new Date().toISOString(),
                 origen: nuevaEstadistica.origen || "Desconocido",
+                afiliado: nuevaEstadistica.afiliado || "Ninguno",
                 duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos
             });
         }
@@ -65,11 +68,10 @@ app.post("/guardar-estadistica", (req, res) => {
             if (err) {
                 return res.status(500).send("Error guardando el archivo");
             }
-            res.send("Duración de sesión actualizada correctamente");
+            res.send("Estadística guardada correctamente");
         });
     });
 });
-
 
 // Ruta para obtener todas las estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
