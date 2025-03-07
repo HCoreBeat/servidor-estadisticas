@@ -38,6 +38,9 @@ app.post("/guardar-estadistica", (req, res) => {
 
         const estadisticas = data ? JSON.parse(data) : [];
 
+        // Verificar si el usuario ya existe (para determinar si es recurrente)
+        const usuarioExistente = estadisticas.find(est => est.ip === nuevaEstadistica.ip);
+
         // Agregar la nueva estadística con todos los datos
         estadisticas.push({
             ip: nuevaEstadistica.ip,
@@ -51,7 +54,11 @@ app.post("/guardar-estadistica", (req, res) => {
             telefono_comprador: nuevaEstadistica.telefono_comprador || "N/A",
             correo_comprador: nuevaEstadistica.correo_comprador || "N/A",
             compras: nuevaEstadistica.compras || [],
-            precio_compra_total: nuevaEstadistica.precio_compra_total || 0
+            precio_compra_total: nuevaEstadistica.precio_compra_total || 0,
+            navegador: nuevaEstadistica.navegador || "Desconocido", // Nuevo campo
+            sistema_operativo: nuevaEstadistica.sistema_operativo || "Desconocido", // Nuevo campo
+            tipo_usuario: usuarioExistente ? "Recurrente" : "Único", // Nuevo campo
+            tiempo_promedio_pagina: nuevaEstadistica.tiempo_promedio_pagina || 0 // Nuevo campo
         });
 
         // Guardar las estadísticas actualizadas
@@ -63,7 +70,6 @@ app.post("/guardar-estadistica", (req, res) => {
         });
     });
 });
-
 
 // Ruta para obtener todas las estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
