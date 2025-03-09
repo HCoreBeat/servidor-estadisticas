@@ -21,6 +21,15 @@ app.use(cors({
 // Middleware para procesar JSON
 app.use(express.json());
 
+// Ruta persistente para guardar estadísticas
+const directoryPath = "/app/data"; // Directorio del volumen persistente
+const filePath = `${directoryPath}/estadistica.json`;
+
+// Crear el directorio si no existe (útil localmente)
+if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+}
+
 // Ruta para guardar estadísticas
 app.post("/guardar-estadistica", (req, res) => {
     const nuevaEstadistica = req.body;
@@ -31,7 +40,7 @@ app.post("/guardar-estadistica", (req, res) => {
     }
 
     // Leer y actualizar el archivo estadistica.json
-    fs.readFile("estadistica.json", "utf8", (err, data) => {
+    fs.readFile(filePath, "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
         }
@@ -58,7 +67,7 @@ app.post("/guardar-estadistica", (req, res) => {
             tiempo_promedio_pagina: nuevaEstadistica.tiempo_promedio_pagina || 0
         });
 
-        fs.writeFile("estadistica.json", JSON.stringify(estadisticas, null, 2), (err) => {
+        fs.writeFile(filePath, JSON.stringify(estadisticas, null, 2), (err) => {
             if (err) {
                 return res.status(500).send("Error guardando el archivo");
             }
@@ -69,7 +78,7 @@ app.post("/guardar-estadistica", (req, res) => {
 
 // Ruta para obtener estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
-    fs.readFile("estadistica.json", "utf8", (err, data) => {
+    fs.readFile(filePath, "utf8", (err, data) => {
         if (err && err.code !== "ENOENT") {
             return res.status(500).send("Error leyendo el archivo");
         }
