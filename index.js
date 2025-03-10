@@ -64,7 +64,9 @@ app.post("/guardar-estadistica", (req, res) => {
             navegador: nuevaEstadistica.navegador || "Desconocido",
             sistema_operativo: nuevaEstadistica.sistema_operativo || "Desconocido",
             tipo_usuario: usuarioExistente ? "Recurrente" : "Único",
-            tiempo_promedio_pagina: nuevaEstadistica.tiempo_promedio_pagina || 0
+            tiempo_promedio_pagina: nuevaEstadistica.tiempo_promedio_pagina || 0,
+            // Nuevo campo: fuente de tráfico
+            fuente_trafico: nuevaEstadistica.fuente_trafico || "Desconocido", // Si no se envía, se asigna "Desconocido"
         });
 
         fs.writeFile(filePath, JSON.stringify(estadisticas, null, 2), (err) => {
@@ -75,7 +77,6 @@ app.post("/guardar-estadistica", (req, res) => {
         });
     });
 });
-
 // Ruta para obtener estadísticas
 app.get("/obtener-estadisticas", (req, res) => {
     fs.readFile(filePath, "utf8", (err, data) => {
