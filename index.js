@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
 const lockfile = require("proper-lockfile");
+const moment = require("moment-timezone"); // Agregar moment-timezone
 
 const app = express();
 
@@ -63,7 +64,7 @@ app.post("/guardar-estadistica", async (req, res) => {
     const nuevaEstadistica = req.body;
 
     // Validar campos obligatorios
-    if (!nuevaEstadistica.ip || !nuevaEstadistica.pais || !nuevaEstadistica.fecha_hora_entrada || !nuevaEstadistica.origen) {
+    if (!nuevaEstadistica.ip || !nuevaEstadistica.pais || !nuevaEstadistica.origen) {
         return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
 
@@ -81,10 +82,13 @@ app.post("/guardar-estadistica", async (req, res) => {
             const estadisticas = data ? sanitizeJSON(data) : [];
             const usuarioExistente = estadisticas.find(est => est.ip === nuevaEstadistica.ip);
 
+            // Obtener la fecha y hora actual en la zona horaria de Cuba
+            const fechaHoraCuba = moment().tz("America/Havana").format("YYYY-MM-DD HH:mm:ss");
+
             estadisticas.push({
                 ip: nuevaEstadistica.ip,
                 pais: nuevaEstadistica.pais,
-                fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada,
+                fecha_hora_entrada: fechaHoraCuba, // Usar la fecha y hora en la zona horaria de Cuba
                 origen: nuevaEstadistica.origen,
                 afiliado: nuevaEstadistica.afiliado || "Ninguno",
                 duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos || 0,
