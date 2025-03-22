@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
+const lockfile = require("proper-lockfile");
 
 const app = express();
 
@@ -58,7 +59,7 @@ function sanitizeJSON(data) {
 }
 
 // Ruta para guardar estadísticas
-app.post("/guardar-estadistica", (req, res) => {
+app.post("/guardar-estadistica", async (req, res) => {
     const nuevaEstadistica = req.body;
 
     // Validar campos obligatorios
@@ -66,56 +67,78 @@ app.post("/guardar-estadistica", (req, res) => {
         return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
 
-    // Leer y actualizar el archivo estadistica.json
-    fs.readFile(filePath, "utf8", (err, data) => {
-        if (err && err.code !== "ENOENT") {
-            return res.status(500).send("Error leyendo el archivo");
-        }
+    try {
+        // Bloquear el archivo antes de leer/escribir
+        await lockfile.lock(filePath);
 
-        // Sanear y corregir el JSON si está malformado
-        const estadisticas = data ? sanitizeJSON(data) : [];
-        const usuarioExistente = estadisticas.find(est => est.ip === nuevaEstadistica.ip);
-
-        estadisticas.push({
-            ip: nuevaEstadistica.ip,
-            pais: nuevaEstadistica.pais,
-            fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada,
-            origen: nuevaEstadistica.origen,
-            afiliado: nuevaEstadistica.afiliado || "Ninguno",
-            duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos || 0,
-            tiempo_carga_pagina_ms: nuevaEstadistica.tiempo_carga_pagina_ms || 0,
-            nombre_comprador: nuevaEstadistica.nombre_comprador || "N/A",
-            telefono_comprador: nuevaEstadistica.telefono_comprador || "N/A",
-            correo_comprador: nuevaEstadistica.correo_comprador || "N/A",
-            compras: nuevaEstadistica.compras || [],
-            precio_compra_total: nuevaEstadistica.precio_compra_total || 0,
-            navegador: nuevaEstadistica.navegador || "Desconocido",
-            sistema_operativo: nuevaEstadistica.sistema_operativo || "Desconocido",
-            tipo_usuario: usuarioExistente ? "Recurrente" : "Único",
-            tiempo_promedio_pagina: nuevaEstadistica.tiempo_promedio_pagina || 0,
-            fuente_trafico: nuevaEstadistica.fuente_trafico || "Desconocido",
-        });
-
-        fs.writeFile(filePath, JSON.stringify(estadisticas, null, 2), (err) => {
-            if (err) {
-                return res.status(500).send("Error guardando el archivo");
+        // Leer y actualizar el archivo estadistica.json
+        fs.readFile(filePath, "utf8", (err, data) => {
+            if (err && err.code !== "ENOENT") {
+                return res.status(500).send("Error leyendo el archivo");
             }
-            res.send("Estadística guardada correctamente");
+
+            // Sanear y corregir el JSON si está malformado
+            const estadisticas = data ? sanitizeJSON(data) : [];
+            const usuarioExistente = estadisticas.find(est => est.ip === nuevaEstadistica.ip);
+
+            estadisticas.push({
+                ip: nuevaEstadistica.ip,
+                pais: nuevaEstadistica.pais,
+                fecha_hora_entrada: nuevaEstadistica.fecha_hora_entrada,
+                origen: nuevaEstadistica.origen,
+                afiliado: nuevaEstadistica.afiliado || "Ninguno",
+                duracion_sesion_segundos: nuevaEstadistica.duracion_sesion_segundos || 0,
+                tiempo_carga_pagina_ms: nuevaEstadistica.tiempo_carga_pagina_ms || 0,
+                nombre_comprador: nuevaEstadistica.nombre_comprador || "N/A",
+                telefono_comprador: nuevaEstadistica.telefono_comprador || "N/A",
+                correo_comprador: nuevaEstadistica.correo_comprador || "N/A",
+                compras: nuevaEstadistica.compras || [],
+                precio_compra_total: nuevaEstadistica.precio_compra_total || 0,
+                navegador: nuevaEstadistica.navegador || "Desconocido",
+                sistema_operativo: nuevaEstadistica.sistema_operativo || "Desconocido",
+                tipo_usuario: usuarioExistente ? "Recurrente" : "Único",
+                tiempo_promedio_pagina: nuevaEstadistica.tiempo_promedio_pagina || 0,
+                fuente_trafico: nuevaEstadistica.fuente_trafico || "Desconocido",
+            });
+
+            fs.writeFile(filePath, JSON.stringify(estadisticas, null, 2), (err) => {
+                if (err) {
+                    return res.status(500).send("Error guardando el archivo");
+                }
+                res.send("Estadística guardada correctamente");
+            });
         });
-    });
+    } catch (error) {
+        console.error("Error al bloquear el archivo:", error);
+        res.status(500).send("Error interno del servidor");
+    } finally {
+        // Liberar el bloqueo
+        lockfile.unlock(filePath).catch(() => {});
+    }
 });
 
 // Ruta para obtener estadísticas
-app.get("/obtener-estadisticas", (req, res) => {
-    fs.readFile(filePath, "utf8", (err, data) => {
-        if (err && err.code !== "ENOENT") {
-            return res.status(500).send("Error leyendo el archivo");
-        }
+app.get("/obtener-estadisticas", async (req, res) => {
+    try {
+        // Bloquear el archivo antes de leer
+        await lockfile.lock(filePath);
 
-        // Sanear y corregir el JSON si está malformado
-        const estadisticas = data ? sanitizeJSON(data) : [];
-        res.json(estadisticas);
-    });
+        fs.readFile(filePath, "utf8", (err, data) => {
+            if (err && err.code !== "ENOENT") {
+                return res.status(500).send("Error leyendo el archivo");
+            }
+
+            // Sanear y corregir el JSON si está malformado
+            const estadisticas = data ? sanitizeJSON(data) : [];
+            res.json(estadisticas);
+        });
+    } catch (error) {
+        console.error("Error al bloquear el archivo:", error);
+        res.status(500).send("Error interno del servidor");
+    } finally {
+        // Liberar el bloqueo
+        lockfile.unlock(filePath).catch(() => {});
+    }
 });
 
 // Puerto de escucha
