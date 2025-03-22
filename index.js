@@ -1,7 +1,6 @@
 const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
-const moment = require("moment-timezone"); // Importar moment-timezone
 
 const app = express();
 
@@ -31,31 +30,29 @@ if (!fs.existsSync(directoryPath)) {
     fs.mkdirSync(directoryPath, { recursive: true });
 }
 
-// Función para obtener la fecha y hora actual en la zona horaria de Cuba
-function getCurrentDateTimeInCuba() {
-    return moment().tz("America/Havana").format("YYYY-MM-DDTHH:mm:ssZ"); // Formato ISO 8601 con zona horaria
-}
-
 // Función para sanear y corregir JSON malformado
 function sanitizeJSON(data) {
     try {
+        // Intenta parsear el JSON directamente
         return JSON.parse(data);
     } catch (error) {
         console.warn("El archivo JSON está malformado. Intentando corregirlo...");
 
+        // Elimina caracteres no válidos (como saltos de línea o comillas sin escapar)
         const sanitizedData = data
-            .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
-            .replace(/\\'/g, "'")
-            .replace(/\\"/g, '"')
-            .replace(/\\n/g, "")
-            .replace(/\\t/g, "")
-            .replace(/\\r/g, "");
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Elimina caracteres de control
+            .replace(/\\'/g, "'") // Corrige comillas simples escapadas
+            .replace(/\\"/g, '"') // Corrige comillas dobles escapadas
+            .replace(/\\n/g, "") // Elimina saltos de línea escapados
+            .replace(/\\t/g, "") // Elimina tabulaciones escapadas
+            .replace(/\\r/g, ""); // Elimina retornos de carro escapados
 
         try {
+            // Intenta parsear el JSON saneado
             return JSON.parse(sanitizedData);
         } catch (finalError) {
             console.error("No se pudo corregir el JSON malformado:", finalError);
-            return [];
+            return []; // Devuelve un array vacío como último recurso
         }
     }
 }
@@ -65,12 +62,9 @@ app.post("/guardar-estadistica", (req, res) => {
     const nuevaEstadistica = req.body;
 
     // Validar campos obligatorios
-    if (!nuevaEstadistica.ip || !nuevaEstadistica.pais || !nuevaEstadistica.origen) {
+    if (!nuevaEstadistica.ip || !nuevaEstadistica.pais || !nuevaEstadistica.fecha_hora_entrada || !nuevaEstadistica.origen) {
         return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
-
-    // Asignar la fecha y hora actual en la zona horaria de Cuba
-    nuevaEstadistica.fecha_hora_entrada = getCurrentDateTimeInCuba();
 
     // Leer y actualizar el archivo estadistica.json
     fs.readFile(filePath, "utf8", (err, data) => {
