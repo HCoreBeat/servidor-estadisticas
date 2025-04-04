@@ -2,12 +2,17 @@ const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
 const lockfile = require("proper-lockfile");
-const moment = require("moment-timezone"); // Agregar moment-timezone
+const moment = require("moment-timezone");
+const fetch = require("node-fetch"); // Importante
 
 const app = express();
 
 // Configuración de CORS
-const allowedOrigins = ["https://www.asereshops.com", "https://hcorebeat.github.io"];
+const allowedOrigins = [
+    "https://www.asereshops.com",
+    "https://hcorebeat.github.io", 
+    "http://localhost:5500"
+];
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -142,6 +147,36 @@ app.get("/obtener-estadisticas", async (req, res) => {
     } finally {
         // Liberar el bloqueo
         lockfile.unlock(filePath).catch(() => {});
+    }
+});
+
+
+// Nueva Ruta para Procesar Pedidos
+app.post("/procesar-pedido", async (req, res) => {
+    try {
+        const pedidoData = req.body;
+        
+        // Validación básica
+        if (!pedidoData.comprador || !pedidoData.destinatario || !pedidoData.pedido) {
+            return res.status(400).json({ error: "Datos incompletos" });
+        }
+
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbwPlO0MqvQapPBx3m0LbOmzWObaLgqy1Fe8DZJlYQ753_CeF7TJ7rjQ7rHaXPPX11Wp/exec";
+
+        // Reenviar a Google Apps Script
+        const scriptResponse = await fetch(scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pedidoData)
+        });
+
+        // Devolver misma respuesta de Google
+        const responseData = await scriptResponse.json();
+        res.status(scriptResponse.status).json(responseData);
+
+    } catch (error) {
+        console.error("Error en proxy:", error);
+        res.status(500).json({ error: "Error al procesar el pedido" });
     }
 });
 
