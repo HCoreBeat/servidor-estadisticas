@@ -171,7 +171,7 @@ app.post("/procesar-pedido", async (req, res) => {
             return res.status(400).json({ error: "Datos incompletos" });
         }
 
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbwg5Wm0Qi0aZzyMOGLDQ6sWxrPIyeNBd658pSDozl-TfnrCtVYtqHRhSrrdfGtiiMQR/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbwF65arL55vVMNEDFDY41yezgOoDpzVb0Tsz5lZcoRlXFIOk-qqkqkjCixw5SyczuGB/exec";
 
         // Reenviar a Google Apps Script
         const scriptResponse = await fetch(scriptUrl, {
