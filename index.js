@@ -169,7 +169,7 @@ app.post("/procesar-pedido", async (req, res) => {
             return res.status(400).json({ error: "Datos incompletos" });
         }
 
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbxDkXUAmf6OodOW_FQMMQHgRgnByjj_PxqUWHqglaJEA7hgfhOhb-1A_cYbB6aABWPf/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbwLIdhn7lyHYYxvwHk8_HUZ01iBLyHTY-67DcOnSS06ZSpEUAgaNRaiHj8fmRV2mWLX/exec";
 
         // 2. Verificar variable de entorno
         if (!scriptUrl) {
