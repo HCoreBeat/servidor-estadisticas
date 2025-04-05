@@ -29,12 +29,15 @@ app.use(cors({
 app.use(express.json());
 
 // Ruta persistente para guardar estadísticas
-const directoryPath = "/app/data"; // Directorio del volumen persistente
+const directoryPath = "./data";
 const filePath = `${directoryPath}/estadistica.json`;
 
-// Crear el directorio si no existe (útil localmente)
+// Crear directorio con permisos correctos
 if (!fs.existsSync(directoryPath)) {
-    fs.mkdirSync(directoryPath, { recursive: true });
+    fs.mkdirSync(directoryPath, { 
+        recursive: true,
+        mode: 0o755 // Permisos: usuario (rwx), grupo (rx), otros (rx)
+    });
 }
 
 // Función para sanear y corregir JSON malformado
@@ -170,7 +173,6 @@ app.post("/procesar-pedido", async (req, res) => {
             body: JSON.stringify(pedidoData)
         });
 
-        // Devolver misma respuesta de Google
         const responseData = await scriptResponse.json();
         res.status(scriptResponse.status).json(responseData);
 
