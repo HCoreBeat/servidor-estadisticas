@@ -32,12 +32,14 @@ app.use(express.json());
 const directoryPath = "./data";
 const filePath = `${directoryPath}/estadistica.json`;
 
-// Crear directorio con permisos correctos
+// Crear directorio y archivo inicial
 if (!fs.existsSync(directoryPath)) {
-    fs.mkdirSync(directoryPath, { 
-        recursive: true,
-        mode: 0o755 // Permisos: usuario (rwx), grupo (rx), otros (rx)
-    });
+    fs.mkdirSync(directoryPath, { recursive: true });
+}
+
+// Crear archivo JSON vacío si no existe
+if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify([]), 'utf8');
 }
 
 // Función para sanear y corregir JSON malformado
@@ -82,8 +84,14 @@ app.post("/guardar-estadistica", async (req, res) => {
 
         // Leer y actualizar el archivo estadistica.json
         fs.readFile(filePath, "utf8", (err, data) => {
-            if (err && err.code !== "ENOENT") {
-                return res.status(500).send("Error leyendo el archivo");
+            if (err) {
+                // Si hay error de lectura, crear archivo nuevo
+                if (err.code === 'ENOENT') {
+                    fs.writeFileSync(filePath, JSON.stringify([]));
+                    data = '[]';
+                } else {
+                    throw err;
+                }
             }
 
             // Sanear y corregir el JSON si está malformado
@@ -124,8 +132,7 @@ app.post("/guardar-estadistica", async (req, res) => {
         console.error("Error al bloquear el archivo:", error);
         res.status(500).send("Error interno del servidor");
     } finally {
-        // Liberar el bloqueo
-        lockfile.unlock(filePath).catch(() => {});
+        await lockfile.unlock(filePath).catch(() => {});
     }
 });
 
