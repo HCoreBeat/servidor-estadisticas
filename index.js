@@ -11,7 +11,7 @@ const app = express();
 const allowedOrigins = [
     "https://www.asereshops.com",
     "https://hcorebeat.github.io", 
-    "http://localhost:5500"
+    "http://127.0.0.1:5500"
 ];
 app.use(cors({
     origin: function (origin, callback) {
@@ -164,40 +164,33 @@ app.get("/obtener-estadisticas", async (req, res) => {
 // Nueva Ruta para Procesar Pedidos
 app.post("/procesar-pedido", async (req, res) => {
     try {
-      // Validación básica
-      if (!req.body.comprador?.nombre || !req.body.pedido?.productos) {
-        return res.status(400).json({ error: "Datos incompletos" });
-      }
-  
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbxDkXUAmf6OodOW_FQMMQHgRgnByjj_PxqUWHqglaJEA7hgfhOhb-1A_cYbB6aABWPf/exec";
+        // Validación básica
+        if (!req.body.comprador || !req.body.pedido?.productos) {
+            return res.status(400).json({ error: "Datos incompletos" });
+        }
 
-      // Reenviar a Google Script
-      const scriptResponse = await fetch(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(req.body)
-      });
-  
-      // Manejar respuesta
-      const responseData = await scriptResponse.json();
-      
-      if (!scriptResponse.ok) {
-        return res.status(500).json({ 
-          error: "Error en Google Script",
-          details: responseData
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxDkXUAmf6OodOW_FQMMQHgRgnByjj_PxqUWHqglaJEA7hgfhOhb-1A_cYbB6aABWPf/exec";
+
+        // 2. Verificar variable de entorno
+        if (!scriptUrl) {
+            throw new Error("Falta configurar GOOGLE_SCRIPT_URL");
+        }
+
+        // 3. Reenviar a Google Script
+        const response = await fetch(scriptUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(req.body)
         });
-      }
-  
-      res.json(responseData);
-  
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+
     } catch (error) {
-      console.error("Error en proxy:", error);
-      res.status(500).json({ 
-        error: "Error interno",
-        details: error.message
-      });
+        console.error("Error en /procesar-pedido:", error);
+        res.status(500).json({ error: error.message });
     }
-  });
+});
 
 // Puerto de escucha
 const PORT = process.env.PORT || 10000;
