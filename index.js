@@ -164,30 +164,40 @@ app.get("/obtener-estadisticas", async (req, res) => {
 // Nueva Ruta para Procesar Pedidos
 app.post("/procesar-pedido", async (req, res) => {
     try {
-        const pedidoData = req.body;
-        
-        // Validación básica
-        if (!pedidoData.comprador || !pedidoData.destinatario || !pedidoData.pedido) {
-            return res.status(400).json({ error: "Datos incompletos" });
-        }
+      // Validación básica
+      if (!req.body.comprador?.nombre || !req.body.pedido?.productos) {
+        return res.status(400).json({ error: "Datos incompletos" });
+      }
+  
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbxDkXUAmf6OodOW_FQMMQHgRgnByjj_PxqUWHqglaJEA7hgfhOhb-1A_cYbB6aABWPf/exec";
 
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbwF65arL55vVMNEDFDY41yezgOoDpzVb0Tsz5lZcoRlXFIOk-qqkqkjCixw5SyczuGB/exec";
-
-        // Reenviar a Google Apps Script
-        const scriptResponse = await fetch(scriptUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(pedidoData)
+      // Reenviar a Google Script
+      const scriptResponse = await fetch(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body)
+      });
+  
+      // Manejar respuesta
+      const responseData = await scriptResponse.json();
+      
+      if (!scriptResponse.ok) {
+        return res.status(500).json({ 
+          error: "Error en Google Script",
+          details: responseData
         });
-
-        const responseData = await scriptResponse.json();
-        res.status(scriptResponse.status).json(responseData);
-
+      }
+  
+      res.json(responseData);
+  
     } catch (error) {
-        console.error("Error en proxy:", error);
-        res.status(500).json({ error: "Error al procesar el pedido" });
+      console.error("Error en proxy:", error);
+      res.status(500).json({ 
+        error: "Error interno",
+        details: error.message
+      });
     }
-});
+  });
 
 // Puerto de escucha
 const PORT = process.env.PORT || 10000;
