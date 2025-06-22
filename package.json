@@ -1,7 +1,7 @@
 {
-  "name": "buquenque-backend",
+  "name": "Asere-backend",
   "version": "1.0.0",
-  "description": "Backend para buquenque",
+  "description": "Backend para Asere",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
